@@ -4,4 +4,4 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - run: echo build
+      - uses: some-vendor/cool-action@v1
