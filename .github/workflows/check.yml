@@ -1,0 +1,30 @@
+name: actions-policy
+on: [pull_request, merge_group]
+permissions:
+  contents: read
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262  # v4
+        with:
+          persist-credentials: false
+      - name: Only approved Actions
+        shell: python
+        run: |
+          import re, fnmatch, pathlib, sys
+          ALLOW = """
+          renesoft-ab/approved-*
+          actions/*
+          github/*
+          """.split()
+          USES = re.compile(r'^\s*-?\s*uses:\s*["\']?([^\s"\'#]+)', re.M)
+          bad = []
+          for f in pathlib.Path(".github/workflows").glob("*.y*ml"):
+              for ref in USES.findall(f.read_text(errors="ignore")):
+                  if ref.startswith("./") or ref.startswith("docker://"):
+                      bad.append(f"{f}: local/docker action not allowed: {ref}")
+                  elif not any(fnmatch.fnmatch(ref, p) for p in ALLOW):
+                      bad.append(f"{f}: not on the approved list: {ref}")
+          print("\n".join(bad) or "OK: only approved Actions")
+          sys.exit(1 if bad else 0)
